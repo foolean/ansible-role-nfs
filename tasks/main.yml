@@ -33,8 +33,8 @@
         masked: true
         force: true
       when:
-        - "'nfs-server.service' in ansible_facts.services"
         - "'nfs-utils' in ansible_facts.packages"
+        - "'nfs-server.service' in ansible_facts.services"
         - ansible_os_family == 'RedHat'
 
     - name: Ensure the rpcbind is masked (CIS)
