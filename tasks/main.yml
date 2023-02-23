@@ -3,53 +3,54 @@
 # SPDX short identifier: BSD-3-Clause
 ---
 
+# We put the entire role in a block so we can create
+# a role specific tag, which saves the caller from
+# having to do so in their playbook.
+- name: Role foolean/nfs
+  block:
 
-#- name: Ensure nfs-utils is not installed (CIS)
-#  become: true
-#  ansible.builtin.package:
-#    name:
-#      - 'nfs-utils'
-#    state: absent
-#  when: ansible_os_family == 'RedHat'
+    - name: Collecting package facts
+      become: true
+      ansible.builtin.package_facts:
+        manager: auto
+      when:
+        - "ansible_facts.packages is not defined"
+        - ansible_os_family == 'RedHat'
 
-- name: Collecting package facts
-  become: true
-  ansible.builtin.package_facts:
-    manager: auto
-  when:
-    - "ansible_facts.packages is not defined"
-    - ansible_os_family == 'RedHat'
+    - name: Collecting service facts
+      become: true
+      ansible.builtin.service_facts:
+      when:
+        - "ansible_facts.services is not defined"
+        - "'nfs-utils' in ansible_facts.packages"
+        - ansible_os_family == 'RedHat'
 
-- name: Collecting service facts
-  become: true
-  ansible.builtin.service_facts:
-  when:
-    - "ansible_facts.services is not defined"
-    - "'nfs-utils' in ansible_facts.packages"
-    - ansible_os_family == 'RedHat'
+    - name: Ensure the nfs-server service is masked (CIS)
+      become: true
+      ansible.builtin.systemd:
+        name: 'nfs-server'
+        enabled: false
+        masked: true
+        force: true
+      when:
+        - "'nfs-server.service' in ansible_facts.services"
+        - "'nfs-utils' in ansible_facts.packages"
+        - ansible_os_family == 'RedHat'
 
-- name: Ensure the nfs-server service is masked (CIS)
-  become: true
-  ansible.builtin.systemd:
-    name: 'nfs-server'
-    enabled: false
-    masked: true
-    force: true
-  when:
-    - "'nfs-server.service' in ansible_facts.services"
-    - "'nfs-utils' in ansible_facts.packages"
-    - ansible_os_family == 'RedHat'
+    - name: Ensure the rpcbind is masked (CIS)
+      become: true
+      ansible.builtin.systemd:
+        name: "{{ item }}"
+        enabled: false
+        masked: true
+        force: true
+      when:
+        - "'rpcbind' in ansible_facts.packages"
+        - ansible_os_family == 'RedHat'
+      with_items:
+        - 'rpcbind.service'
+        - 'rpcbind.socket'
 
-- name: Ensure the rpcbind is masked (CIS)
-  become: true
-  ansible.builtin.systemd:
-    name: "{{ item }}"
-    enabled: false
-    masked: true
-    force: true
-  when:
-    - "'rpcbind' in ansible_facts.packages"
-    - ansible_os_family == 'RedHat'
-  with_items:
-    - 'rpcbind.service'
-    - 'rpcbind.socket'
+  # Tags to be applied to this role (block)
+  tags:
+    - 'role_foolean_nfs'
