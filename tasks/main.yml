@@ -15,17 +15,26 @@
         manager: auto
       when:
         - "ansible_facts.packages is not defined"
-        - ansible_os_family == 'RedHat'
 
     - name: Collecting service facts
       become: true
       ansible.builtin.service_facts:
       when:
         - "ansible_facts.services is not defined"
-        - "'nfs-utils' in ansible_facts.packages"
-        - ansible_os_family == 'RedHat'
+        - "'nfs-utils' or 'nfs-kernel-server' in ansible_facts.packages"
 
-    - name: Ensure the nfs-server service is masked (CIS)
+    - name: CIS | Ensure NFS is not installed
+      become: true
+      ansible.builtin.package:
+        name:
+          # RedHat
+          - 'nfs-utils'
+          # Debian packages
+          - 'nfs-kernel-server'
+          - 'rpcbind'
+        state: absent
+
+    - name: CIS | Ensure the nfs-server service is masked
       become: true
       ansible.builtin.systemd:
         name: 'nfs-server'
@@ -33,11 +42,10 @@
         masked: true
         force: true
       when:
-        - "'nfs-utils' in ansible_facts.packages"
+        - "'nfs-utils' or 'nfs-kernel-server' in ansible_facts.packages"
         - "'nfs-server.service' in ansible_facts.services"
-        - ansible_os_family == 'RedHat'
 
-    - name: Ensure the rpcbind is masked (CIS)
+    - name: CIS | Ensure the rpcbind is masked
       become: true
       ansible.builtin.systemd:
         name: "{{ item }}"
@@ -46,7 +54,6 @@
         force: true
       when:
         - "'rpcbind' in ansible_facts.packages"
-        - ansible_os_family == 'RedHat'
       with_items:
         - 'rpcbind.service'
         - 'rpcbind.socket'
