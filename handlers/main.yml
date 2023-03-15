@@ -1,0 +1,9 @@
+# Copyright (c) 2023, Bennett Samowich <bennett@foolean.org>
+# All rights reserved
+# SPDX short identifier: BSD-3-Clause
+---
+
+- name: Reload NFS exports
+  become: true
+  ansible.builtin.command:
+    cmd: 'exportfs -r'

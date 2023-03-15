@@ -1,0 +1,37 @@
+# Copyright (c) 2023, Bennett Samowich <bennett@foolean.org>
+# All rights reserved
+# SPDX short identifier: BSD-3-Clause
+---
+
+# nfs_client_enable
+#   Toggle whether or not to install and configure the NFS client
+#   (default: false)
+nfs_client_enable: false
+
+# nfs_client_mounts
+#   Dictionary of client mounts
+#
+#     Format:
+#        nfs_client_mounts:
+#            - src: "<server:path>"
+#              path: "<mountpoint>"
+#              opts: "<mount_options>"
+#   (default: null)
+nfs_client_mounts: null
+
+# nfs_server_exports
+#   Dictionary of NFS exports
+#   Format:
+#       nfs_server_exports:
+#           <path1>:
+#                 <client1>: "<options>"
+#                 <client2>: "<options>"
+#           <path2>:
+#                 <client1>: "<options>"
+#   (default: null)
+nfs_server_exports: null
+
+# nfs_server_enable
+#   Toggle whether or not to install and configure the NFS server
+#   (default: false)$
+nfs_server_enable: false

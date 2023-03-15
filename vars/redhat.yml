@@ -1,0 +1,9 @@
+# Copyright (c) 2023, Bennett Samowich <bennett@foolean.org>
+# All rights reserved
+# SPDX short identifier: BSD-3-Clause
+---
+
+# nfs_server_packages
+#   List of server packages to be installed/removed
+nfs_server_packages:
+  - 'nfs-utils'

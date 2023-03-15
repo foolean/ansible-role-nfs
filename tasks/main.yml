@@ -9,6 +9,13 @@
 - name: Role foolean/nfs
   block:
 
+    - name: Set OS variables
+      ansible.builtin.include_vars:
+        file: "{{ item }}"
+      with_first_found:
+        - "{{ ansible_os_family|lower }}.yml"
+        - "default.yml"
+
     - name: Collecting package facts
       become: true
       ansible.builtin.package_facts:
@@ -21,29 +28,24 @@
       ansible.builtin.service_facts:
       when:
         - "ansible_facts.services is not defined"
-        - "'nfs-utils' or 'nfs-kernel-server' in ansible_facts.packages"
 
-    - name: CIS | Ensure NFS is not installed
+    - name: Configure NFS server
+      ansible.builtin.import_tasks:
+        file: 'server.yml'
+
+    - name: Configure NFS client
+      ansible.builtin.import_tasks:
+        file: 'client.yml'
+
+    # rpcbind is a common package required by both
+    # the server and client packages.
+    - name: CIS | Ensure rpcbind is removed
       become: true
       ansible.builtin.package:
-        name:
-          # RedHat
-          - 'nfs-utils'
-          # Debian packages
-          - 'nfs-kernel-server'
-          - 'rpcbind'
+        name: 'rpcbind'
         state: absent
-
-    - name: CIS | Ensure the nfs-server service is masked
-      become: true
-      ansible.builtin.systemd:
-        name: 'nfs-server'
-        enabled: false
-        masked: true
-        force: true
       when:
-        - "'nfs-utils' or 'nfs-kernel-server' in ansible_facts.packages"
-        - "'nfs-server.service' in ansible_facts.services"
+        - not nfs_client_enable and not nfs_server_enable
 
     - name: CIS | Ensure the rpcbind is masked
       become: true
@@ -53,10 +55,15 @@
         masked: true
         force: true
       when:
-        - "'rpcbind' in ansible_facts.packages"
+        - "'rpcbind' in ansible_facts.packages or nfs_client_installed.changed"
       with_items:
         - 'rpcbind.service'
         - 'rpcbind.socket'
+
+    # Flush any handlers that we might have called
+    - name: Flush handlers
+      ansible.builtin.meta:
+        flush_handlers
 
   # Tags to be applied to this role (block)
   tags:

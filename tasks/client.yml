@@ -1,0 +1,68 @@
+# Copyright (c) 2023, Bennett Samowich <bennett@foolean.org>
+# All rights reserved
+# SPDX short identifier: BSD-3-Clause
+---
+
+# NFS kernel server implies NFS client
+
+
+- name: NFS client disable
+  block:
+    - name: Remove NFS client
+      become: true
+      ansible.builtin.package:
+        name: "{{ nfs_client_packages }}"
+        state: absent
+
+    - name: Deny outbound NFS
+      become: true
+      community.general.ufw:
+        rule: allow
+        direction: 'out'
+        port: '2049'
+        proto: 'tcp'
+        log: true
+        delete: true
+      when:
+        - ansible_os_family|lower == 'debian'
+  when:
+    - not nfs_client_enable
+    - not nfs_server_enable
+
+
+- name: NFS client enable
+  block:
+    - name: Install NFS client
+      become: true
+      ansible.builtin.package:
+        name: "{{ nfs_client_packages }}"
+        state: present
+      register: nfs_client_installed
+
+    - name: Allow outbound NFS
+      become: true
+      community.general.ufw:
+        rule: allow
+        direction: 'out'
+        port: '2049'
+        proto: 'tcp'
+        log: true
+      when:
+        - ansible_os_family|lower == 'debian'
+        - nfs_client_mounts != None
+
+    - name: Configure NFS mounts
+      become: true
+      ansible.posix.mount:
+        src: "{{ item.src }}"
+        path: "{{ item.path }}"
+        fstype: "nfs4"
+        opts: "{{ item.opts | default('defaults') }}"
+        dump: "{{ item.dump | default(0) }}"
+        passno: "{{ item.passno | default(2) }}"
+        state: "{{ item.state | default('mounted') }}"
+      with_items: "{{ nfs_client_mounts }}"
+      when:
+        - nfs_client_mounts != None
+  when:
+    - nfs_client_enable or nfs_server_enable
