@@ -7,3 +7,7 @@
 #   List of server packages to be installed/removed
 nfs_server_packages:
   - 'nfs-utils'
+
+nfs_client_packages:
+  - 'nfs-utils'
+  - 'nfs4-acl-tools'
